@@ -19,3 +19,7 @@ The form reports success only after both messages are accepted by Gmail. If send
 4. Redeploy after adding the variables. The form endpoint is deployed as `/api/submissions`.
 
 For local development, `.env` is read by the local Express API. Vercel runs the same handler as a serverless function in production.
+
+## GitHub Pages
+
+GitHub Pages publishes the built static site from `dist` using the included Actions workflow. The page itself works there, but GitHub Pages cannot run the `/api/submissions` email endpoint; deploy to Vercel and configure the email environment variables to enable form submissions.
