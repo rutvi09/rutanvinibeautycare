@@ -201,8 +201,8 @@ function App() {
                     Thank you!!!
                   </h3>
                   <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-[#8c7776]">
-                    Your details have been sent, and a confirmation email is on
-                    its way. We can&apos;t wait to connect with you.
+                    Your details have been saved. We can&apos;t wait to connect
+                    with you.
                   </p>
                   <button
                     type="button"
@@ -252,7 +252,7 @@ function App() {
                     disabled={isSubmitting}
                     className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#bd8589] px-5 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] text-white shadow-[0_8px_20px_-10px_rgba(153,94,99,0.7)] transition hover:-translate-y-0.5 hover:bg-[#a97075] focus:outline-none focus:ring-4 focus:ring-[#efd9d8] active:translate-y-0 disabled:cursor-wait disabled:opacity-70"
                   >
-                    {isSubmitting ? "Sending your details..." : "Send your details"}
+                    {isSubmitting ? "Saving your details..." : "Send your details"}
                     {!isSubmitting && (
                       <span
                         aria-hidden="true"
@@ -263,7 +263,7 @@ function App() {
                     )}
                   </button>
                   <p className="pt-1 text-center text-[10px] leading-5 text-[#ae9c98]">
-                    We&apos;ll email you a confirmation and use your details to get in touch.
+                    We&apos;ll save your details and use them to get in touch.
                   </p>
                 </form>
               )}

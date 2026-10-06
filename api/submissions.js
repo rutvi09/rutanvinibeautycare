@@ -1,41 +1,3 @@
-import nodemailer from "nodemailer";
-
-const businessEmails = ["rutanvini@gmail.com", "rutvisolanki2@gmail.com"];
-const senderName = "Rutanvini Beauty Care";
-let transporter;
-
-function getTransporter() {
-  const gmailUser = process.env.GMAIL_USER?.trim();
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
-
-  if (!gmailUser || !gmailAppPassword) {
-    throw new Error("GMAIL_USER and GMAIL_APP_PASSWORD are not configured.");
-  }
-
-  transporter ??= nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: gmailUser,
-      pass: gmailAppPassword,
-    },
-  });
-
-  return { transporter, gmailUser };
-}
-
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[character];
-  });
-}
-
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -69,62 +31,52 @@ export default async function handler(request, response) {
     });
   }
 
-  const details = {
-    Name: name.trim(),
-    Email: email.trim(),
-    "Phone number": phone.trim(),
-    "WhatsApp number": whatsapp.trim(),
-    City: city.trim(),
-    "Instagram ID":
-      typeof instagram === "string" && instagram.trim()
-        ? instagram.trim()
-        : "Not provided",
-  };
-  const textDetails = Object.entries(details)
-    .map(([label, value]) => `${label}: ${value}`)
-    .join("\n");
-  const htmlDetails = Object.entries(details)
-    .map(
-      ([label, value]) =>
-        `<tr><th align="left">${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`,
-    )
-    .join("");
+  const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const supabaseKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ||
+    process.env.SUPABASE_ANON_KEY?.trim();
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Supabase submission storage is not configured.");
+    return response.status(500).json({
+      error: "We couldn't save your details. Please try again later.",
+    });
+  }
 
   try {
-    const mail = getTransporter();
-    const sender = { name: senderName, address: mail.gmailUser };
+    const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/submissions`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        whatsapp: whatsapp.trim(),
+        city: city.trim(),
+        instagram: typeof instagram === "string" ? instagram.trim() || null : null,
+      }),
+    });
 
-    await Promise.all([
-      mail.transporter.sendMail({
-        from: sender,
-        to: businessEmails,
-        replyTo: email.trim(),
-        subject: `New beauty care enquiry from ${name.trim()}`,
-        text: `A new form was submitted:\n\n${textDetails}`,
-        html: `<h2>New beauty care enquiry</h2><table cellpadding="8" cellspacing="0">${htmlDetails}</table>`,
-      }),
-      mail.transporter.sendMail({
-        from: sender,
-        to: email.trim(),
-        subject: "We received your enquiry | Rutanvini Beauty Care",
-        text: `Hi ${name.trim()},\n\nThank you for getting in touch with Rutanvini Beauty Care. We received your details and will connect with you soon.\n\nWarmly,\nRutanvini Beauty Care`,
-        html: `<p>Hi ${escapeHtml(name.trim())},</p><p>Thank you for getting in touch with Rutanvini Beauty Care. We received your details and will connect with you soon.</p><p>Warmly,<br>Rutanvini Beauty Care</p>`,
-      }),
-    ]);
+    if (!supabaseResponse.ok) {
+      console.error("Supabase rejected a form submission:", {
+        status: supabaseResponse.status,
+      });
+      return response.status(500).json({
+        error: "We couldn't save your details. Please try again later.",
+      });
+    }
 
     return response.status(200).json({ success: true });
   } catch (error) {
-    console.error("Failed to send beauty care submission emails:", {
-      code: error.code,
-      responseCode: error.responseCode,
-      command: error.command,
-      message: error.message,
+    console.error("Failed to save beauty care submission to Supabase:", {
+      message: error instanceof Error ? error.message : "Unknown error",
     });
     return response.status(500).json({
-      error:
-        error.responseCode === 535
-          ? "Email setup was rejected by Gmail. Check the Vercel email environment variables."
-          : "We couldn't send your emails. Check the server logs and try again.",
+      error: "We couldn't save your details. Please try again later.",
     });
   }
 }

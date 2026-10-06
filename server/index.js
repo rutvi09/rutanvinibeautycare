@@ -9,5 +9,5 @@ app.use(express.json({ limit: "10kb" }));
 app.post("/api/submissions", submissionHandler);
 
 app.listen(port, () => {
-  console.log(`Email API server listening on http://localhost:${port}`);
+  console.log(`Submission API server listening on http://localhost:${port}`);
 });
